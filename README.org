@@ -1,10 +1,10 @@
-* Cl-Transmission 
+* CL-Transmission
 ** Usage
 *** Loading
 Lets start by loading ~CL-TRANSMISSION~ and defining our connection. Connections
 are thread-safe in the way that you can use a one or more connection in multiple
 threads.
-#+begin_src lisp
+#+begin_src lisp :exports both
   (ql:quickload :cl-transmission)
 
   (defvar *conn* (make-instance 'cl-transmission:transmission-connection :credentials
@@ -22,7 +22,7 @@ So lets get some torrents. First lets get all torrents and of every torrent get
 the id, name and eta. This is done by using the
 ~CL-TRANSMISSION:TRANSMISSION-GET~ method.
 
-#+begin_src lisp
+#+begin_src lisp :exports both
   (cl-transmission:transmission-get *conn* #(:name :id :eta) :strict t)
 #+end_src
 
@@ -37,7 +37,7 @@ NIL
 As shown for every live torrent a hash-table is returned. So lets see how it is
 structured:
 
-#+begin_src lisp
+#+begin_src lisp :exports both
   (alexandria:hash-table-plist
    (elt (cl-transmission:transmission-get *conn* #(:name :id :eta) :strict t)
         0))
@@ -53,7 +53,7 @@ id, if you know it this is the fastest way, or mapping over the return value.
 Adding torrents is done by the ~CL-TRANSMISSION:TRANSMISSION-ADD~ function. So
 lets say we want to add a nice debian torrent to seed.
 
-#+begin_src lisp
+#+begin_src lisp :exports both
   (cl-transmission:transmission-add *conn* :filename "http://cdimage.debian.org/debian-cd/current/amd64/bt-dvd/debian-8.7.1-amd64-DVD-2.iso.torrent")
 #+end_src
 
