@@ -1,0 +1,75 @@
+* Cl-Transmission 
+** Usage
+*** Loading
+Lets start by loading ~CL-TRANSMISSION~ and defining our connection. Connections
+are thread-safe in the way that you can use a one or more connection in multiple
+threads.
+#+begin_src lisp
+  (ql:quickload :cl-transmission)
+
+  (defvar *conn* (make-instance 'cl-transmission:transmission-connection :credentials
+                                '("libreman" "super-secret-password")))
+#+end_src
+
+#+RESULTS:
+: *CONN*
+
+Please note that this package is not (yet) in Quicklisp so you will have to add
+it to your local projects to be able to load it. See the [[https://www.quicklisp.org/beta/faq.html][Quicklisp FAQ]] on how to
+do this.
+*** Searching
+So lets get some torrents. First lets get all torrents and of every torrent get
+the id, name and eta. This is done by using the
+~CL-TRANSMISSION:TRANSMISSION-GET~ method.
+
+#+begin_src lisp
+  (cl-transmission:transmission-get *conn* #(:name :id :eta) :strict t)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+(#<HASH-TABLE :TEST EQUAL :COUNT 3 {1014218D23}>
+ #<HASH-TABLE :TEST EQUAL :COUNT 3 {10142193B3}>
+ #<HASH-TABLE :TEST EQUAL :COUNT 3 {1014241C83}>)
+NIL
+#+end_example
+
+As shown for every live torrent a hash-table is returned. So lets see how it is
+structured:
+
+#+begin_src lisp
+  (alexandria:hash-table-plist
+   (elt (cl-transmission:transmission-get *conn* #(:name :id :eta) :strict t)
+        0))
+#+end_src
+
+#+RESULTS:
+| :NAME | debian-8.7.1-amd64-DVD-1.iso | :ID | 72 | :ETA | 1368 |
+
+So it simply contains the fields we specified. Searching is done by or passing a
+id, if you know it this is the fastest way, or mapping over the return value.
+
+*** Adding
+Adding torrents is done by the ~CL-TRANSMISSION:TRANSMISSION-ADD~ function. So
+lets say we want to add a nice debian torrent to seed.
+
+#+begin_src lisp
+  (cl-transmission:transmission-add *conn* :filename "http://cdimage.debian.org/debian-cd/current/amd64/bt-dvd/debian-8.7.1-amd64-DVD-2.iso.torrent")
+#+end_src
+
+#+RESULTS:
+: #<HASH-TABLE :TEST EQUAL :COUNT 3 {10174B6333}>
+: :TORRENT-ADDED
+
+We get a hash-table of our new torrent with an ~ID~, ~NAME~ and ~HASH-STRING~,
+and the second return value is indicating this is a new torrent. So if we would
+add the same torrent again this would be ~:TORRENT-DUPLICATE~.
+
+*** Others
+At the moment the entire section 3 of the RPC spec is implemented. Simply see
+the exported method and their docstrings. Development is active and section 4
+will be implemented.
+** Author
++ Thomas Schaper (Thomas@libremail.nl)
+** Copyright
+Copyright (c) 2017 Thomas Schaper (Thomas@libremail.nl)
