@@ -15,7 +15,6 @@ Author: Thomas Schaper (Thomas@libremail.nl)
                "drakma"
                "named-readtables"
                "x.let-star"
-               "bordeaux-threads"
                "cl-ppcre"
                "uiop"
                "jonathan")
