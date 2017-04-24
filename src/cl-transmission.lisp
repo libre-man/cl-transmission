@@ -96,11 +96,7 @@ NIL if no auth is needed.")
     :type string
     :initform ""
     :documentation #d"The current \"X-Transmission-Session-Id\" used by the ~
-transmission server.")
-   (session-id-lock
-    :type #.(type-of (bt:make-lock))
-    :initform (bt:make-lock)
-    :documentation "The lock to protect \"SESSION-ID\" updates.")))
+transmission server.")))
 
 (defmacro def-torrent-request (method lambda-list (&key ignore-keys-p) &body body)
   (let* ((name (intern (concatenate 'string "TRANSMISSION-" (symbol-name method))))
@@ -109,28 +105,23 @@ transmission server.")
                             (car body)
                             nil))
          (body (if documentation (cdr body) body))
-         (declarations (if (eql (caar body) 'declare)
-                           (list (car body))
-                           nil))
+         (declarations (if (eql (caar body) 'declare) (car body) nil))
          (body (if declarations (cdr body) body))
-         (method-list (cons
-                       '(conn transmission-connection)
-                       (if ignore-keys-p
-
-                           (loop :for item :in lambda-list
-                                 :for key-seen = (eql item '&key)
-                                   :then (or key-seen (eql item '&key))
-                                 :when (eql item '&key)
-                                   :append (list '&rest 'all-keys '&key) :into res
-                                 :when (or (not key-seen)
-                                           (listp item))
-                                   :collect item :into res
-                                 :finally (return
-                                            (if key-seen
-                                                (append res (list '&allow-other-keys))
-                                                (append res (list '&rest 'all-keys)))))
-                           lambda-list)))
-         (tag-loop (gensym "LOOP"))
+         (method-list (cons '(conn transmission-connection)
+                            (if ignore-keys-p
+                                (loop :for item :in lambda-list
+                                      :for key-seen = (eql item '&key)
+                                        :then (or key-seen (eql item '&key))
+                                      :when (eql item '&key)
+                                        :append (list '&rest 'all-keys '&key) :into res
+                                      :when (or (not key-seen)
+                                                (listp item))
+                                        :collect item :into res
+                                      :finally (return (append res
+                                                               (if key-seen
+                                                                   '(&allow-other-keys)
+                                                                   '(&rest all-keys)))))
+                                lambda-list)))
          (lambda-list (loop :for item :in lambda-list
                             :collect (if (listp item)
                                          (car item)
@@ -138,18 +129,9 @@ transmission server.")
     `(defgeneric-export ,name ,(cons 'connection lambda-list)
        (:documentation ,documentation)
        (:method ,method-list
-         ,@declarations
-         (block nil
-           (tagbody
-              ,tag-loop
-              (let ((transmission-method-name ,method-string))
-                (return
-                  (restart-case
-                      (progn
-                        ,@body)
-                    (retry-request ()
-                      :report "Retry the request with the same arguments."
-                      (go ,tag-loop)))))))))))
+         ,declarations
+         (let ((transmission-method-name ,method-string))
+           ,@body)))))
 
 (defmacro def-torrent-action-request (action &optional docstring)
   (check-type docstring (or null string))
@@ -178,9 +160,8 @@ This function will return nothing of value.")))
 
 (defun update-session-id (conn headers)
   (with-slots (session-id-lock session-id) conn
-    (bt:with-lock-held (session-id-lock)
-      (setf session-id (cdr (assoc :x-transmission-session-id
-                                   headers))))))
+    (setf session-id (cdr (assoc :x-transmission-session-id
+                                 headers)))))
 
 (define-condition-export transmission-error (error)
   ((response :initarg :response :reader transmission-error-response))
@@ -191,18 +172,16 @@ request to the transmission server.")
                      "Transmission server signaled an error: \"~A\"."
                      (transmission-error-response condition)))))
 
-(defun transmission-request (conn method arguments)
+(defun %transmission-request (conn method arguments)
   (check-type conn transmission-connection)
   (check-type method string)
   (check-type arguments (or hash-table list))
   (flet ((get-res (url content)
-           (drakma:http-request
-            url
-
-            :method :post
-            :basic-authorization (slot-value conn 'credentials)
-            :additional-headers `(("X-Transmission-Session-Id" . ,(slot-value conn 'session-id)))
-            :content content)))
+           (drakma:http-request url
+                                :method :post
+                                :basic-authorization (slot-value conn 'credentials)
+                                :additional-headers `(("X-Transmission-Session-Id" . ,(slot-value conn 'session-id)))
+                                :content content)))
     (let* ((content-hash #h(equalp
                             "method" method
                             "arguments" arguments))
@@ -227,6 +206,11 @@ request to the transmission server.")
         (if (equal error-string "success")
             arguments
             (error 'transmission-error :response error-string))))))
+
+(defun transmission-request (conn method arguments)
+  (loop :thereis (with-simple-restart (retry-request "Retry the request to ~
+transmission server with the same arguments")
+                   (%transmission-request conn method arguments))))
 
 (def-torrent-action-request start
   "Start the given torrents by adding them to the appropriate queue.")
