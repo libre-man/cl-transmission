@@ -39,7 +39,7 @@
   (the-check symbol
              (make-keyword
               (string-upcase
-               (cl-ppcre:regex-replace "[A-Z]" string "-\\&")))))
+               (cl-ppcre:regex-replace-all "[A-Z]" string "-\\&")))))
 
 (defun-export plist-to-hash-table (plist
                                    &rest
