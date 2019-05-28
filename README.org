@@ -7,8 +7,9 @@ threads.
 #+begin_src lisp :exports both
   (ql:quickload :cl-transmission)
 
-  (defvar *conn* (make-instance 'cl-transmission:transmission-connection :credentials
-                                '("libreman" "super-secret-password")))
+  (defvar *conn* (make-instance 'cl-transmission:transmission-connection
+                                :host "your.ip"  ;; the host is "localhost" by default.
+                                :credentials '("libreman" "super-secret-password")))
 #+end_src
 
 #+RESULTS:
@@ -50,8 +51,12 @@ So it simply contains the fields we specified. Searching is done by or passing a
 id, if you know it this is the fastest way, or mapping over the return value.
 
 *** Adding
-Adding torrents is done by the ~CL-TRANSMISSION:TRANSMISSION-ADD~ function. So
-lets say we want to add a nice debian torrent to seed.
+Adding  torrents  is  done by  the  ~CL-TRANSMISSION:TRANSMISSION-ADD~
+function. It accepts a =:FILENAME= argument which should be a filename
+to a torrent file or a magnet  link, and =:METAINFO= which should be a
+base64-encoded torrent file.
+
+So lets say we want to add a nice debian torrent to seed:
 
 #+begin_src lisp :exports both
   (cl-transmission:transmission-add *conn* :filename "http://cdimage.debian.org/debian-cd/current/amd64/bt-dvd/debian-8.7.1-amd64-DVD-2.iso.torrent")
