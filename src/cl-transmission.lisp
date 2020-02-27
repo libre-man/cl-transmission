@@ -200,7 +200,7 @@ request to the transmission server.")
                                       :junk-allowed t
                                       :keyword-normalizer #'string->keyword
                                       :normalize-all t)
-                      #h()))
+                      #h(:result res)))
         (let* ((arguments (gethash :arguments res))
                (error-string (gethash :result res)))
           (if (equal error-string "success")
