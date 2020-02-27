@@ -14,7 +14,6 @@ Author: Thomas Schaper (Thomas@libremail.nl)
   :depends-on ("rutils"
                "drakma"
                "named-readtables"
-               "x.let-star"
                "cl-ppcre"
                "uiop"
                "jonathan")

@@ -8,7 +8,6 @@
           #:rutils.anaphora
           #:cl-transmission.util
           #:cl-transmission.constants)
-  (:shadowing-import-from :x.let-star :let*)
   (:import-from :rutils
                 #:sethash
                 #:length=
@@ -186,26 +185,27 @@ request to the transmission server.")
                             "method" method
                             "arguments" arguments))
            (content (jonathan:to-json content-hash))
-           (url (get-transmission-host conn))
-           ((:mval res code headers) (get-res url content)))
-      (when (= code 409)
-        (update-session-id conn headers)
-        (multiple-value-bind (new-res new-code)
-            (get-res url content)
-          (setf code new-code)
-          (setf res new-res)))
-      (setf res (if (= code 200)
-                    (jonathan:parse res
-                                    :as :hash-table
-                                    :junk-allowed t
-                                    :keyword-normalizer #'string->keyword
-                                    :normalize-all t)
-                    #h()))
-      (let* ((arguments (gethash :arguments res))
-             (error-string (gethash :result res)))
-        (if (equal error-string "success")
-            arguments
-            (error 'transmission-error :response error-string))))))
+           (url (get-transmission-host conn)))
+      (multiple-value-bind (res code headers)
+          (get-res url content)
+        (when (= code 409)
+          (update-session-id conn headers)
+          (multiple-value-bind (new-res new-code)
+              (get-res url content)
+            (setf code new-code)
+            (setf res new-res)))
+        (setf res (if (= code 200)
+                      (jonathan:parse res
+                                      :as :hash-table
+                                      :junk-allowed t
+                                      :keyword-normalizer #'string->keyword
+                                      :normalize-all t)
+                      #h()))
+        (let* ((arguments (gethash :arguments res))
+               (error-string (gethash :result res)))
+          (if (equal error-string "success")
+              arguments
+              (error 'transmission-error :response error-string)))))))
 
 (defun transmission-request (conn method arguments)
   (loop :thereis (with-simple-restart (retry-request "Retry the request to ~
@@ -286,6 +286,7 @@ the specified fiels normalized as keywords."
          (res (transmission-request conn
                                     transmission-method-name
                                     args)))
+    (declare (ignore _))
     (values (gethash :torrents res)
             (gethash :removed res))))
 
