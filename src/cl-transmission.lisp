@@ -249,7 +249,7 @@ This function will return nothing of value."
                 all-keys
                 :test 'equal
                 :convert-key ^(gethash % +transmission-set-params+))))
-    (sethash (gethash :id +transmission-set-params+)
+    (sethash (gethash :ids +transmission-set-params+)
              args
              (if (eql ids :all) #() ids))
     (transmission-request conn
