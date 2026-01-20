@@ -270,7 +270,7 @@ are specified in \"CL-TRANSMISSION.CONSTANTS:+TRANSMISSION-GET-PARAMS+\"
 
 The first return value is a list of active torrents. The second return value is
 a list of removed torrents. Torrents are represented by a hash-table containing
-the specified fiels normalized as keywords."
+the specified fields normalized as keywords."
   (check-type ids (or null sequence string (satisfies keyword-all-p)))
   (check-type fields sequence)
   (when strict
